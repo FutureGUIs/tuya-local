@@ -4,6 +4,7 @@ from base64 import b64encode
 
 import pytest
 
+from custom_components.tuya_local.device import TuyaLocalDevice
 from custom_components.tuya_local.helpers.device_config import TuyaDpsConfig, get_config
 
 
@@ -142,3 +143,21 @@ def test_matches_owners_setup_capture_without_temperature_packet():
     config = get_config("inkbird_int14sbw_thermometer")
     assert config.matches({"101": "F", "102": True, "104": 81}, [])
     assert not config.matches({"101": "F", "102": True}, [])
+
+
+def test_register_multisensor_refreshes_each_datapoint_once(mocker):
+    """Shared packed DPs must not be repeated for each temperature channel."""
+    hass = mocker.MagicMock()
+    hass.is_running = True
+    mocker.patch("tinytuya.Device")
+    device = TuyaLocalDevice(
+        "Test", "test-id", "test-host", "test-key", "3.5", None, hass
+    )
+    device._running = True
+    device._cached_state = {"104": 81}
+    config = get_config("inkbird_int14sbw_thermometer")
+    for entity_config in config.all_entities():
+        entity = mocker.MagicMock()
+        entity._config = entity_config
+        device.register_entity(entity)
+    assert device._force_dps == [109, 103]
