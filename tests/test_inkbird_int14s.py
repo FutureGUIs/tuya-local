@@ -1,4 +1,4 @@
-"""Read-only INT-14S LAN decoding and binary packet validation."""
+"""INT-14S LAN decoding, brightness control and binary packet validation."""
 
 from base64 import b64encode
 
@@ -25,6 +25,7 @@ def read_sensors(mocker, dps):
     return {
         entity.name: entity.find_dps("sensor").get_value(device)
         for entity in config.all_entities()
+        if entity.entity == "sensor"
     }
 
 
@@ -128,15 +129,27 @@ def test_crc8_standard_check_vector_and_corruption(mocker, encoding):
         assert cfg.get_value(device) == expected
 
 
-def test_readonly_entities_and_write_rejection(mocker):
+def test_brightness_is_the_only_writable_entity(mocker):
     config = get_config("inkbird_int14sbw_thermometer")
     entities = list(config.all_entities())
-    assert len(entities) == 27
-    for entity in entities:
-        assert entity.entity == "sensor"
+    sensors = [entity for entity in entities if entity.entity == "sensor"]
+    controls = [entity for entity in entities if entity.entity != "sensor"]
+    assert len(sensors) == 27
+    assert len(controls) == 1
+    for entity in sensors:
         dp = entity.find_dps("sensor")
         assert dp.readonly
         assert dp.get_values_to_set(mocker.MagicMock(), 50) == {}
+    control = controls[0]
+    assert control.entity == "number"
+    dp = control.find_dps("value")
+    device = mocker.MagicMock()
+    device.get_property.return_value = 81
+    assert dp.get_value(device) == 81
+    assert dp.get_values_to_set(device, 50) == {"104": 50}
+    for value in (0, 101):
+        with pytest.raises(ValueError):
+            dp.get_values_to_set(device, value)
 
 
 def test_matches_owners_setup_capture_without_temperature_packet():
