@@ -309,6 +309,23 @@ For base64 and hex types, this specifies the endianess of the data and mask. Cou
 
 For base64 and hex types, set this to true if you need to extract a signed integer from the masked field.
 
+### `length`
+
+*Optional.*
+
+For base64 and hex DPs, require this decoded packet length in bytes, including
+the checksum byte when present. Invalid packets return no sensor value.
+
+### `checksum`
+
+*Optional.*
+
+For read-only base64 and hex DPs, `crc8_atm` validates the last byte against
+CRC-8/ATM over all preceding bytes (polynomial 0x07, initial value 0x00,
+no reflection or final XOR). The checksum byte remains part of the decoded
+packet, so existing masks keep their offsets. This does not generate checksums
+for writes. Use with `length` to reject incompatible packet layouts.
+
 ## Mapping Rules
 
 Mapping rules can change the behavior of attributes beyond simple

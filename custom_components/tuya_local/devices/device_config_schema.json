@@ -213,6 +213,18 @@
                                         "additionalProperties": false
                                     }
                                 },
+                                "length": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "description": "Expected decoded binary packet length in bytes, including any checksum."
+                                },
+                                "checksum": {
+                                    "type": "string",
+                                    "enum": [
+                                        "crc8_atm"
+                                    ],
+                                    "description": "Validate the trailing CRC-8/ATM byte (poly 0x07, init 0x00, no reflection or final xor) before extracting values. Read-only packets only."
+                                },
                                 "mask": {
                                     "type": "string",
                                     "pattern": "^[0-9a-fA-F]+$",

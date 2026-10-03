@@ -1,0 +1,748 @@
+# yamllint disable rule:line-length
+name: Multisensor BBQ thermometer
+# Inkbird INT-14S-BW. Product ID is not yet available.
+# Layout reference: zampix1/ha-inkbird-int14 protocol.py.
+# DP109: four 13-byte probe blocks, station int16, CRC-8/ATM.
+# Each probe: internal int16, four food int16, ambient int16, status byte.
+# Food readings are Fahrenheit hundredths; ambient/station are tenths.
+# Setup capture: {"101": "F", "102": true, "104": 81}.
+entities:
+  - entity: sensor
+    name: Probe 1 food 1 temperature
+    class: temperature
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000FFFF0000"
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 100
+
+  - entity: sensor
+    name: Probe 1 food 2 temperature
+    class: temperature
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000FFFF00000000"
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 100
+
+  - entity: sensor
+    name: Probe 1 food 3 temperature
+    class: temperature
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: "0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000FFFF000000000000"
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 100
+
+  - entity: sensor
+    name: Probe 1 food 4 temperature
+    class: temperature
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000FFFF0000000000000000"
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 100
+
+  - entity: sensor
+    name: Probe 1 ambient temperature
+    class: temperature
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000FFFF00000000000000000000"
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 10
+
+  - entity: sensor
+    name: Probe 2 food 1 temperature
+    class: temperature
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: "0000000000000000000000000000000000000000000000000000000000000000000000000000FFFF000000000000000000000000000000"
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 100
+
+  - entity: sensor
+    name: Probe 2 food 2 temperature
+    class: temperature
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: "000000000000000000000000000000000000000000000000000000000000000000000000FFFF0000000000000000000000000000000000"
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 100
+
+  - entity: sensor
+    name: Probe 2 food 3 temperature
+    class: temperature
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: "00000000000000000000000000000000000000000000000000000000000000000000FFFF00000000000000000000000000000000000000"
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 100
+
+  - entity: sensor
+    name: Probe 2 food 4 temperature
+    class: temperature
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: "0000000000000000000000000000000000000000000000000000000000000000FFFF000000000000000000000000000000000000000000"
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 100
+
+  - entity: sensor
+    name: Probe 2 ambient temperature
+    class: temperature
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: "000000000000000000000000000000000000000000000000000000000000FFFF0000000000000000000000000000000000000000000000"
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 10
+
+  - entity: sensor
+    name: Probe 3 food 1 temperature
+    class: temperature
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: "00000000000000000000000000000000000000000000000000FFFF00000000000000000000000000000000000000000000000000000000"
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 100
+
+  - entity: sensor
+    name: Probe 3 food 2 temperature
+    class: temperature
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: "0000000000000000000000000000000000000000000000FFFF000000000000000000000000000000000000000000000000000000000000"
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 100
+
+  - entity: sensor
+    name: Probe 3 food 3 temperature
+    class: temperature
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: "000000000000000000000000000000000000000000FFFF0000000000000000000000000000000000000000000000000000000000000000"
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 100
+
+  - entity: sensor
+    name: Probe 3 food 4 temperature
+    class: temperature
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: "00000000000000000000000000000000000000FFFF00000000000000000000000000000000000000000000000000000000000000000000"
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 100
+
+  - entity: sensor
+    name: Probe 3 ambient temperature
+    class: temperature
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: "0000000000000000000000000000000000FFFF000000000000000000000000000000000000000000000000000000000000000000000000"
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 10
+
+  - entity: sensor
+    name: Probe 4 food 1 temperature
+    class: temperature
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: "000000000000000000000000FFFF0000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 100
+
+  - entity: sensor
+    name: Probe 4 food 2 temperature
+    class: temperature
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: "00000000000000000000FFFF00000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 100
+
+  - entity: sensor
+    name: Probe 4 food 3 temperature
+    class: temperature
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: "0000000000000000FFFF000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 100
+
+  - entity: sensor
+    name: Probe 4 food 4 temperature
+    class: temperature
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: "000000000000FFFF0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 100
+
+  - entity: sensor
+    name: Probe 4 ambient temperature
+    class: temperature
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: "00000000FFFF00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 10
+
+  - entity: sensor
+    name: Station temperature
+    class: temperature
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: "00FFFF00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 10
+
+  - entity: sensor
+    name: Station battery
+    class: battery
+    category: diagnostic
+    dps:
+      - id: 103
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 6
+        checksum: crc8_atm
+        mask: "0000000000FF"
+        endianness: little
+        unit: "%"
+        mapping:
+          - dps_val: 127
+            value: null
+
+  - entity: sensor
+    name: Probe 1 battery
+    class: battery
+    category: diagnostic
+    dps:
+      - id: 103
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 6
+        checksum: crc8_atm
+        mask: "00000000FF00"
+        endianness: little
+        unit: "%"
+        mapping:
+          - dps_val: 127
+            value: null
+
+  - entity: sensor
+    name: Probe 2 battery
+    class: battery
+    category: diagnostic
+    dps:
+      - id: 103
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 6
+        checksum: crc8_atm
+        mask: "000000FF0000"
+        endianness: little
+        unit: "%"
+        mapping:
+          - dps_val: 127
+            value: null
+
+  - entity: sensor
+    name: Probe 3 battery
+    class: battery
+    category: diagnostic
+    dps:
+      - id: 103
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 6
+        checksum: crc8_atm
+        mask: "0000FF000000"
+        endianness: little
+        unit: "%"
+        mapping:
+          - dps_val: 127
+            value: null
+
+  - entity: sensor
+    name: Probe 4 battery
+    class: battery
+    category: diagnostic
+    dps:
+      - id: 103
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 6
+        checksum: crc8_atm
+        mask: "00FF00000000"
+        endianness: little
+        unit: "%"
+        mapping:
+          - dps_val: 127
+            value: null
+
+  - entity: sensor
+    name: Display brightness
+    category: diagnostic
+    dps:
+      - id: 104
+        type: integer
+        name: sensor
+        readonly: true
+        unit: "%"
