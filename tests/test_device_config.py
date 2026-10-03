@@ -125,6 +125,8 @@ DP_SCHEMA = vol.Schema(
         vol.Optional("mask"): str,
         vol.Optional("endianness"): vol.In(["little"]),
         vol.Optional("mask_signed"): True,
+        vol.Optional("length"): vol.All(int, vol.Range(min=1)),
+        vol.Optional("checksum"): vol.In(["crc8_atm"]),
     }
 )
 ENTITY_SCHEMA = vol.Schema(
