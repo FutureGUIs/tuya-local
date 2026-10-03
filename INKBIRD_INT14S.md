@@ -1,82 +1,91 @@
-# Inkbird INT-14S-BW LAN readings and brightness control
+# INT-14S-BW food-high targets and Time to Temp
 
-This fork adds a first implementation of local Wi-Fi readings for the
-INT-14S-BW. It has been checked against published protocol captures and synthetic
-packets. The owner has confirmed temperature and battery readings over LAN; individual channel accuracy and long-term reliability still need checking.
+## Install
 
-## Entities
+For the complete ZIP, extract it and copy the entire
+`custom_components/tuya_local` folder into Home Assistant's
+`config/custom_components`, replacing the existing Tuya Local folder. The archive
+also includes repository documentation and tests; those do not need installing.
 
-- Four food temperatures and one ambient temperature per probe (20 total).
-- Station temperature.
-- Station battery and four probe battery percentages.
-- Reported display brightness, as a sensor.
+For a manual update from the earlier test build:
 
-The 27 sensor entities remain read-only. A Display brightness number entity
-adds an experimental writable control for DP104, from 1 to 100 percent.
-There are no target-temperature controls, BLE connections or cloud-history requests.
-Battery and brightness sensors are diagnostic entities.
+Copy these seven runtime files to the matching paths under Home Assistant's
+`config/custom_components/tuya_local` directory:
 
-## Install and try
+- `device.py`
+- `number.py`
+- `sensor.py`
+- `text.py`
+- `helpers/device_config.py`
+- `helpers/inkbird.py`
+- `devices/inkbird_int14sbw_thermometer.yaml`
 
-1. Back up the existing Tuya Local installation and its configuration.
-2. Download this fork and replace the complete `custom_components/tuya_local`
-   directory in Home Assistant. A YAML-only copy is insufficient: the decoder
-   also needs the new packet-validation support in `helpers/device_config.py`.
-3. Restart Home Assistant.
-4. Add the station through Tuya Local using its LAN address, Tuya device ID and
-   local key. Try protocol 3.5, which the reference integration uses.
-5. Select the configuration `inkbird_int14sbw_thermometer`
-   (Multisensor BBQ thermometer).
-6. Compare all channels with the Inkbird app while heating one probe at a time.
+Fully restart Home Assistant. Each probe now has a **food high target** number
+control and a **time to temp** duration sensor. The previous JSON text controls
+are no longer exposed. Home Assistant may retain unavailable registry entries
+for the old controls; remove those old entries through entity settings.
 
-Do not run another local Tuya integration against the same station concurrently;
-many devices only allow one LAN connection.
+## Food-high controls
 
-The owner's setup capture contains DP101 (`F`), DP102 (`true`) and DP104 (`81`),
-without temperatures or batteries. Only brightness DP104 is required for matching;
-DP109 and DP103 are optional so setup can finish before temperature packets arrive.
-The product ID is `bozmpl04yva3x0sa`, reported by the owner. If this configuration is not offered, capture the
-`LOCAL DPS` warning during setup. DP109 and DP103 request
-explicit read updates (`updatedps`); only an explicit brightness change writes a setting. Refresh requests deduplicate shared datapoints, so the 27 entities request only `[109, 103]`.
+Set the target temperature normally in the number control. Native values are
+Fahrenheit; Home Assistant's temperature conversion handles displayed units.
+Each update builds the equivalent of:
 
-## Decoding
+```json
+{"food_high":165,"food_low":null,"ambient_high":null,"ambient_low":null}
+```
 
-DP109 must be 55 decoded bytes: four 13-byte probe blocks, a two-byte station
-temperature and a trailing CRC-8/ATM byte. Food channels use signed little-endian
-Fahrenheit hundredths. Ambient and station readings use Fahrenheit tenths.
-Home Assistant can display these in Celsius using its normal unit conversion.
-Probe sentinel values are mapped to unknown rather than extreme temperatures.
-DP103 must be six bytes: five battery values and a CRC byte; 127 means unknown.
-Invalid lengths, bad Base64 and incorrect checksums return unknown values.
+Only food-high is enabled. Every write disables food-low and both ambient alarms
+for that probe. The integration sends a complete 20-byte command without a CRC;
+reported target packets require 21 bytes with a valid CRC. Valid reported packet
+metadata is preserved. With no report, metadata defaults to no food presets,
+zero degree/pre-alarm/reserved fields, and the current timestamp.
 
-Protocol layout and the published test capture come from the MIT-licensed
-[zampix1/ha-inkbird-int14](https://github.com/zampix1/ha-inkbird-int14), specifically
-`protocol.py` and `tests/test_int11i_protocol.py`. This is an independent device
-configuration with a generic read-only CRC validation helper.
+The last requested food-high value is restored across Home Assistant restarts.
+The number's `value_source` attribute distinguishes `last_requested` from
+`device_report`. The owner confirmed an actual Probe 1 high alarm after setting
+a target below the current temperature. Device readback can remain absent.
 
-The product ID is registered as Inkbird INT-14S-BW.
-Charging flags, alarm states and target-temperature controls remain outside this version.
+## Time to Temp
+
+One sensor per probe estimates minutes until its food-high target is reached.
+It uses **food temperature channel 1**, consistently in native Fahrenheit, and
+linear regression over the latest five minutes of samples. It requires at least
+three readings spanning one minute. Estimates adjust when the target changes.
+
+The sensor returns zero when the target is reached. It is unknown during warmup,
+missing targets, disconnected probes, flat/cooling trends, or when no temperature
+packet has arrived for over 90 seconds. Disconnects and long gaps reset the
+trend. The trend starts fresh after restart; it is not reconstructed from history.
+
+These are rolling estimates, not a cooking model: stalls and slowing heating
+change the estimate. For example, 110 °F rising 2 °F/min toward 130 °F gives
+10 minutes. With no target readback, it uses the restored/requested food-high
+value, so edits in another app cannot be detected unless the station reports them.
+
+## Other readings and polling
+
+The existing 27 read-only temperature, battery and brightness sensors remain.
+There are now four additional duration sensors, four food-high number controls,
+and the existing brightness number control. Only DP104 is required for matching
+initial setup. The owner reports product ID `bozmpl04yva3x0sa`; protocol 3.5 works.
+
+Each ordinary Inkbird cycle requests status and forced datapoints, then waits
+about ten seconds, plus response time. Writes request readback after about two
+seconds. At startup, a battery-only DP103 request precedes the larger forced
+request. Missing, unknown, or invalid battery packets trigger extra reads about
+every three seconds, bounded to ten attempts within the first minute. Extra
+reads stop as soon as all five percentages are valid. Actual response timing
+depends on the station; this does not show restored values as fresh battery data.
+Other Tuya Local profiles retain their original polling behavior.
 
 ## Validation
 
-The device configuration and decoder tests cover the published LAN capture,
-all 20 channel offsets, signed readings, disconnected probes, battery values,
-missing values, bad encoding, packet lengths, checksum corruption and the
-read-only command maps. Lint uses the repository's Ruff and yamllint settings.
+97 focused tests pass, covering packet layout, disabled alarms, native target
+restoration, trend estimates, stale/missing readings, configuration and polling.
+Ruff and YAML validation pass, with one pre-existing unrelated YAML warning.
+The full Home Assistant pytest plugin needs Unix fcntl and cannot load on this
+Windows environment. Time to Temp still needs validation on the real station.
 
-On Windows, the normal Home Assistant pytest plugin cannot load because it
-requires the Unix `fcntl` module. The configuration and decoder tests can run
-with plugin autoload disabled and `pytest_mock` plus `pytest_asyncio.plugin`
-loaded explicitly. Temperature refresh requests currently alternate with status polling at 30-second intervals, so requested readings can update about once per minute. Full integration tests should run in the repository's Linux
-GitHub Actions environment before treating this as hardware-validated support.
-
-## Test the brightness control
-
-After updating the full integration folder and restarting Home Assistant, open
-the existing device and find the Display brightness number entity under
-configuration controls. Record its current value (81 in the owner capture),
-set it to 50, confirm the physical display changes, then restore the original
-value. Allow the separate brightness sensor to update from a later device
-report; Tuya Local may show a pending requested value immediately, so the UI
-alone does not prove the station accepted the write. Brightness writes have
-not yet been hardware validated on this station.
+Protocol reference: [zampix1/ha-inkbird-int14](https://github.com/zampix1/ha-inkbird-int14).
+This build is published to the owner's fork alongside a complete source ZIP.
