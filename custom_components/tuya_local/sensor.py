@@ -2,7 +2,9 @@
 Setup for different kinds of Tuya sensors
 """
 
+import json
 import logging
+from time import time
 
 from homeassistant.components.sensor import (
     STATE_CLASSES,
@@ -14,6 +16,7 @@ from .device import TuyaLocalDevice
 from .entity import TuyaLocalEntity, unit_from_ascii
 from .helpers.config import async_tuya_setup_platform
 from .helpers.device_config import TuyaEntityConfig
+from .helpers.inkbird import TemperatureTrend, targets_packet_text
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -25,8 +28,18 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         async_add_entities,
         config,
         "sensor",
-        TuyaLocalSensor,
+        _sensor_entity,
     )
+
+
+def _sensor_entity(device, config):
+    if (
+        config._device.config_type == "inkbird_int14sbw_thermometer"
+        and config.name
+        and config.name.endswith(" time to temp")
+    ):
+        return InkbirdTimeToTempSensor(device, config)
+    return TuyaLocalSensor(device, config)
 
 
 class TuyaLocalSensor(TuyaLocalEntity, SensorEntity):
@@ -111,3 +124,41 @@ class TuyaLocalSensor(TuyaLocalEntity, SensorEntity):
             for val in values:
                 if isinstance(val, str):
                     return values
+
+
+class InkbirdTimeToTempSensor(TuyaLocalSensor):
+    """Estimate time to food-high from food channel 1, using native Fahrenheit."""
+
+    def __init__(self, device, config):
+        super().__init__(device, config)
+        self._target_dp = config.find_dps("target")
+        self._trend = TemperatureTrend()
+
+    def on_receive(self, data, full_poll):
+        if self._sensor_dps.id in data:
+            self._trend.add(time(), self._sensor_dps.get_value(self._device))
+
+    @property
+    def native_value(self):
+        raw = self._device.get_reported_property(self._target_dp.id)
+        if raw is None:
+            target = self._device._inkbird_food_targets.get(self._target_dp.id)
+        else:
+            # Read reported target without a pending command overlay.
+            report = targets_packet_text(
+                self._target_dp.decode_value(raw, self._device)
+            )
+            target = json.loads(report)["food_high"] if report else None
+        return self._trend.minutes_to_target(target, time())
+
+    @property
+    def native_unit_of_measurement(self):
+        return "min"
+
+    @property
+    def native_precision(self):
+        return 1
+
+    @property
+    def suggested_display_precision(self):
+        return 1

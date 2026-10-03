@@ -4,7 +4,7 @@ Setup for different kinds of Tuya numbers
 
 import logging
 
-from homeassistant.components.number import NumberEntity
+from homeassistant.components.number import NumberEntity, RestoreNumber
 from homeassistant.components.number.const import (
     DEFAULT_MAX_VALUE,
     DEFAULT_MIN_VALUE,
@@ -28,8 +28,14 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
         async_add_entities,
         config,
         "number",
-        TuyaLocalNumber,
+        _number_entity,
     )
+
+
+def _number_entity(device, config):
+    if config.find_dps("value").write_handler == "inkbird_int14s_food_high":
+        return InkbirdFoodHighNumber(device, config)
+    return TuyaLocalNumber(device, config)
 
 
 class TuyaLocalNumber(TuyaLocalEntity, NumberEntity):
@@ -133,3 +139,43 @@ class TuyaLocalNumber(TuyaLocalEntity, NumberEntity):
         )
 
         await self._device.async_set_properties(settings)
+
+
+class InkbirdFoodHighNumber(TuyaLocalNumber, RestoreNumber):
+    """Food-high only; every write disables the other three thresholds."""
+
+    def __init__(self, device, config):
+        super().__init__(device, config)
+        self._last_requested = None
+
+    async def async_added_to_hass(self):
+        await RestoreNumber.async_added_to_hass(self)
+        previous = await self.async_get_last_number_data()
+        if previous and previous.native_value is not None:
+            self._last_requested = previous.native_value
+            self._device._inkbird_food_targets[self._value_dps.id] = (
+                previous.native_value
+            )
+        await TuyaLocalNumber.async_added_to_hass(self)
+
+    @property
+    def native_value(self):
+        report = super().native_value
+        return report if report is not None else self._last_requested
+
+    async def async_set_native_value(self, value):
+        await self._value_dps.async_set_value(self._device, value)
+        self._last_requested = value
+        self._device._inkbird_food_targets[self._value_dps.id] = value
+        self.async_write_ha_state()
+        for entity in self._device._children:
+            entity.schedule_update_ha_state()
+
+    @property
+    def extra_state_attributes(self):
+        report = self._value_dps.decode_value(
+            self._device.get_reported_property(self._value_dps.id), self._device
+        )
+        return super().extra_state_attributes | {
+            "value_source": "device_report" if report is not None else "last_requested",
+        }

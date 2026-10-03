@@ -29,6 +29,7 @@ from .const import (
 )
 from .helpers.config import get_device_id
 from .helpers.device_config import possible_matches
+from .helpers.inkbird import battery_packet_ready
 from .helpers.log import log_json
 
 _LOGGER = logging.getLogger(__name__)
@@ -80,6 +81,7 @@ class TuyaLocalDevice(object):
         self._manufacturer = manufacturer
         self._model = model
         self._children = []
+        self._inkbird_food_targets = {}
         self._force_dps = []
         self._product_ids = []
         self._running = False
@@ -157,6 +159,7 @@ class TuyaLocalDevice(object):
         # its switches.
         self._FAKE_IT_TIMEOUT = 5
         self._POLLING_INTERVAL = 30
+        self._poll_forced_with_status = False
         self._HEARTBEAT_INTERVAL = 5
         # More attempts are needed in auto mode so we can cycle through all
         # the possibilities a couple of times
@@ -237,6 +240,10 @@ class TuyaLocalDevice(object):
         # starting, refresh the device state so it shows as available without
         # waiting for startup to complete.
         should_poll = len(self._children) == 0 and not self._hass.is_running
+
+        if entity._config._device.config_type == "inkbird_int14sbw_thermometer":
+            self._POLLING_INTERVAL = 10
+            self._poll_forced_with_status = True
 
         self._children.append(entity)
         for dp in entity._config.dps():
@@ -365,10 +372,91 @@ class TuyaLocalDevice(object):
                     self._last_full_poll = 0  # ensure we start with a full poll
 
                 needs_full_poll = now - self._last_full_poll > self._POLLING_INTERVAL
-                if now - last_cache > self._POLLING_INTERVAL or (
+                if (
+                    self._poll_forced_with_status
+                    and self._api_protocol_working
+                    and self._battery_startup_until is None
+                ):
+                    self._battery_startup_until = now + 60
+                needs_startup_battery = (
+                    self._poll_forced_with_status
+                    and self._api_protocol_working
+                    and self._battery_startup_until is not None
+                    and now < self._battery_startup_until
+                    and self._battery_startup_attempts < 10
+                    and now >= self._next_battery_startup_poll
+                    and not battery_packet_ready(self.get_reported_property("103"))
+                )
+                if self._write_readback_dps and now >= self._write_readback_at:
+                    # Read through the existing receive loop after allowing the
+                    # device to apply a write. Keep ordinary polling independent.
+                    requested = sorted(self._write_readback_dps)
+                    forced = [dp for dp in requested if dp in self._force_dps]
+                    if forced and self._api_protocol_working:
+                        self._write_readback_dps.difference_update(forced)
+                        poll = await self._retry_on_failed_connection(
+                            lambda requested_dps=forced: self._api.updatedps(
+                                requested_dps
+                            ),
+                            f"Failed to read changed device dps for {self.name}",
+                        )
+                    else:
+                        self._write_readback_dps.difference_update(requested)
+                        poll = await self._retry_on_failed_connection(
+                            lambda: self._api.status(),
+                            f"Failed to read changed device status for {self.name}",
+                        )
+                        full_poll = True
+                    last_heartbeat = now
+                elif needs_startup_battery and not needs_full_poll:
+                    # Request batteries alone while the station is warming up;
+                    # optional target packets must not hold up this first read.
+                    self._battery_startup_attempts += 1
+                    poll = await self._retry_on_failed_connection(
+                        lambda: self._api.updatedps([103]),
+                        f"Failed to read startup batteries for {self.name}",
+                    )
+                    self._next_battery_startup_poll = time() + 3
+                    last_heartbeat = time()
+                elif now - last_cache > self._POLLING_INTERVAL or (
                     persist and needs_full_poll
                 ):
-                    if (
+                    if self._poll_forced_with_status:
+                        poll = await self._retry_on_failed_connection(
+                            lambda: self._api.status(),
+                            f"Failed to fetch device status for {self.name}",
+                        )
+                        full_poll = True
+                        if isinstance(poll, dict) and "Err" not in poll:
+                            status_dps = poll.get("dps", poll)
+                            yield {**status_dps, "full_poll": True}
+                            if self._force_dps:
+                                # Ask for startup batteries before the larger
+                                # request, then deliver its partial report now.
+                                if needs_startup_battery:
+                                    self._battery_startup_attempts += 1
+                                    battery = await self._retry_on_failed_connection(
+                                        lambda: self._api.updatedps([103]),
+                                        f"Failed to read startup batteries for {self.name}",
+                                    )
+                                    self._next_battery_startup_poll = time() + 3
+                                    if (
+                                        isinstance(battery, dict)
+                                        and "Err" not in battery
+                                    ):
+                                        yield {
+                                            **battery.get("dps", battery),
+                                            "full_poll": False,
+                                        }
+                                poll = await self._retry_on_failed_connection(
+                                    lambda: self._api.updatedps(self._force_dps),
+                                    f"Failed to update device dps for {self.name}",
+                                )
+                                full_poll = False
+                            else:
+                                poll = None
+                        now = time()
+                    elif (
                         self._force_dps
                         and not dps_updated
                         and self._api_protocol_working
@@ -541,6 +629,10 @@ class TuyaLocalDevice(object):
         cached_state = self._get_cached_state()
         return cached_state.get(dps_id)
 
+    def get_reported_property(self, dps_id):
+        """Return device-reported state without overlaying pending commands."""
+        return self._cached_state.get(dps_id)
+
     async def async_set_property(self, dps_id, value):
         await self.async_set_properties({dps_id: value})
 
@@ -560,6 +652,11 @@ class TuyaLocalDevice(object):
         self._pending_updates = {}
         self._last_connection = 0
         self._last_full_poll = 0
+        self._write_readback_dps = set()
+        self._write_readback_at = 0
+        self._battery_startup_until = None
+        self._battery_startup_attempts = 0
+        self._next_battery_startup_poll = 0
 
     def _refresh_cached_state(self):
         new_state = self._api.status()
@@ -665,6 +762,11 @@ class TuyaLocalDevice(object):
         for key in properties.keys():
             pending_updates[key]["updated_at"] = now
             pending_updates[key]["sent"] = True
+        if properties:
+            self._write_readback_dps.update(int(key) for key in properties)
+            self._write_readback_at = now + 2
+            for entity in self._children:
+                entity.schedule_update_ha_state()
 
     async def _retry_on_failed_connection(self, func, error_message):
         if self._api_protocol_version_index is None:
