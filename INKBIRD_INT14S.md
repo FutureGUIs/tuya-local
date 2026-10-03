@@ -2,7 +2,7 @@
 
 This fork adds a first implementation of local Wi-Fi readings for the
 INT-14S-BW. It has been checked against published protocol captures and synthetic
-packets, but has not yet been tested on the owner's device.
+packets. The owner has confirmed temperature and battery readings over LAN; individual channel accuracy and long-term reliability still need checking.
 
 ## Entities
 
@@ -34,9 +34,9 @@ many devices only allow one LAN connection.
 The owner's setup capture contains DP101 (`F`), DP102 (`true`) and DP104 (`81`),
 without temperatures or batteries. Only brightness DP104 is required for matching;
 DP109 and DP103 are optional so setup can finish before temperature packets arrive.
-The product ID is still unknown. If this configuration is not offered, capture the
+The product ID is `bozmpl04yva3x0sa`, reported by the owner. If this configuration is not offered, capture the
 `LOCAL DPS` warning during setup. DP109 and DP103 request
-explicit read updates (`updatedps`); no setting writes are performed.
+explicit read updates (`updatedps`); no setting writes are performed. Refresh requests deduplicate shared datapoints, so the 27 entities request only `[109, 103]`.
 
 ## Decoding
 
@@ -53,7 +53,7 @@ Protocol layout and the published test capture come from the MIT-licensed
 `protocol.py` and `tests/test_int11i_protocol.py`. This is an independent device
 configuration with a generic read-only CRC validation helper.
 
-The product ID is deliberately omitted until it is known; no ID is invented.
+The product ID is registered as Inkbird INT-14S-BW.
 Charging flags, alarm states and controls remain outside this first version.
 
 ## Validation
@@ -66,5 +66,5 @@ read-only command maps. Lint uses the repository's Ruff and yamllint settings.
 On Windows, the normal Home Assistant pytest plugin cannot load because it
 requires the Unix `fcntl` module. The configuration and decoder tests can run
 with plugin autoload disabled and `pytest_mock` plus `pytest_asyncio.plugin`
-loaded explicitly. Full integration tests should run in the repository's Linux
+loaded explicitly. Temperature refresh requests currently alternate with status polling at 30-second intervals, so requested readings can update about once per minute. Full integration tests should run in the repository's Linux
 GitHub Actions environment before treating this as hardware-validated support.
