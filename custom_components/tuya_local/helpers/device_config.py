@@ -490,6 +490,10 @@ class TuyaDpsConfig:
         raw_from_device = device.get_property(self.id)
         bytevalue = self.decode_value(raw_from_device, device)
 
+        if self._config.get("checksum") or self._config.get("length"):
+            if bytevalue is None:
+                return None
+
         if mask and isinstance(bytevalue, bytes):
             value = int.from_bytes(bytevalue, self.endianness)
             scale = mask & (1 + ~mask)
@@ -521,7 +525,7 @@ class TuyaDpsConfig:
             try:
                 if (len(v) % 2) != 0:
                     v = "0" + v
-                return bytes.fromhex(v)
+                return self._validate_binary(bytes.fromhex(v))
             except ValueError:
                 _LOGGER.warning(
                     "%s sent invalid hex '%s' for %s",
@@ -533,7 +537,9 @@ class TuyaDpsConfig:
 
         elif self.rawtype == "base64" and isinstance(v, str):
             try:
-                return b64decode(v)
+                return self._validate_binary(
+                    b64decode(v, validate=bool(self._config.get("checksum")))
+                )
             except ValueError:
                 _LOGGER.warning(
                     "%s sent invalid base64 '%s' for %s",
@@ -543,7 +549,29 @@ class TuyaDpsConfig:
                 )
                 return None
         else:
-            return v
+            return self._validate_binary(v)
+
+    def _validate_binary(self, value):
+        """Validate opt-in binary packet length and trailing CRC-8/ATM."""
+        length = self._config.get("length")
+        checksum = self._config.get("checksum")
+        if not length and not checksum:
+            return value
+        if not isinstance(value, bytes) or not value:
+            return None
+        if length and len(value) != length:
+            return None
+        if checksum == "crc8_atm":
+            crc = 0
+            for byte in value[:-1]:
+                crc ^= byte
+                for _ in range(8):
+                    crc = (
+                        ((crc << 1) ^ 0x07) & 0xFF if crc & 0x80 else (crc << 1) & 0xFF
+                    )
+            if crc != value[-1]:
+                return None
+        return value
 
     def encode_value(self, v):
         if self.rawtype == "hex":
