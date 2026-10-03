@@ -129,18 +129,22 @@ def test_crc8_standard_check_vector_and_corruption(mocker, encoding):
         assert cfg.get_value(device) == expected
 
 
-def test_brightness_is_the_only_writable_entity(mocker):
+def test_readonly_sensors_and_writable_controls(mocker):
     config = get_config("inkbird_int14sbw_thermometer")
     entities = list(config.all_entities())
     sensors = [entity for entity in entities if entity.entity == "sensor"]
     controls = [entity for entity in entities if entity.entity != "sensor"]
-    assert len(sensors) == 27
-    assert len(controls) == 1
+    assert len(sensors) == 31
+    brightness = [entity for entity in controls if entity.name == "Display brightness"]
+    targets = [entity for entity in controls if entity.name != "Display brightness"]
+    assert len(brightness) == 1
+    assert len(targets) == 4
+    assert all(entity.entity == "number" for entity in targets)
     for entity in sensors:
         dp = entity.find_dps("sensor")
         assert dp.readonly
         assert dp.get_values_to_set(mocker.MagicMock(), 50) == {}
-    control = controls[0]
+    control = brightness[0]
     assert control.entity == "number"
     dp = control.find_dps("value")
     device = mocker.MagicMock()
@@ -173,4 +177,4 @@ def test_register_multisensor_refreshes_each_datapoint_once(mocker):
         entity = mocker.MagicMock()
         entity._config = entity_config
         device.register_entity(entity)
-    assert device._force_dps == [109, 103]
+    assert device._force_dps == [109, 103, 122, 123, 124, 125]

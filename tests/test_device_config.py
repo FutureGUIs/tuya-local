@@ -127,6 +127,13 @@ DP_SCHEMA = vol.Schema(
         vol.Optional("mask_signed"): True,
         vol.Optional("length"): vol.All(int, vol.Range(min=1)),
         vol.Optional("checksum"): vol.In(["crc8_atm"]),
+        vol.Optional("write_handler"): vol.In(
+            [
+                "inkbird_int14s_target",
+                "inkbird_int14s_targets",
+                "inkbird_int14s_food_high",
+            ]
+        ),
     }
 )
 ENTITY_SCHEMA = vol.Schema(
