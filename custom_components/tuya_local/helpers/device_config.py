@@ -2,6 +2,7 @@
 Config parser for Tuya Local devices.
 """
 
+import json
 import logging
 from base64 import b64decode, b64encode
 from collections.abc import Sequence
@@ -15,6 +16,13 @@ from homeassistant.util import slugify
 from homeassistant.util.yaml import load_yaml
 
 import custom_components.tuya_local.devices as config_dir
+
+from .inkbird import (
+    build_targets_packet,
+    crc8_atm,
+    targets_packet_text,
+    update_target_packet,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -423,6 +431,10 @@ class TuyaDpsConfig:
         return types.get(t)
 
     @property
+    def write_handler(self):
+        return self._config.get("write_handler")
+
+    @property
     def rawtype(self):
         return self._config["type"]
 
@@ -489,6 +501,11 @@ class TuyaDpsConfig:
         # Get raw value directly avoiding accidental scaling by decoded_value()
         raw_from_device = device.get_property(self.id)
         bytevalue = self.decode_value(raw_from_device, device)
+        if self.write_handler in ("inkbird_int14s_targets", "inkbird_int14s_food_high"):
+            text = targets_packet_text(bytevalue)
+            if self.write_handler == "inkbird_int14s_food_high":
+                return json.loads(text)["food_high"] if text else None
+            return text
 
         if self._config.get("checksum") or self._config.get("length"):
             if bytevalue is None:
@@ -562,14 +579,7 @@ class TuyaDpsConfig:
         if length and len(value) != length:
             return None
         if checksum == "crc8_atm":
-            crc = 0
-            for byte in value[:-1]:
-                crc ^= byte
-                for _ in range(8):
-                    crc = (
-                        ((crc << 1) ^ 0x07) & 0xFF if crc & 0x80 else (crc << 1) & 0xFF
-                    )
-            if crc != value[-1]:
+            if crc8_atm(value[:-1]) != value[-1]:
                 return None
         return value
 
@@ -1014,6 +1024,24 @@ class TuyaDpsConfig:
         if self.readonly:
             return dps_map
 
+        if self.write_handler == "inkbird_int14s_food_high":
+            value = json.dumps(
+                {
+                    "food_high": value,
+                    "food_low": None,
+                    "ambient_high": None,
+                    "ambient_low": None,
+                }
+            )
+        if self.write_handler in ("inkbird_int14s_targets", "inkbird_int14s_food_high"):
+            # Outgoing commands are 20 bytes; reports are 21 bytes with CRC.
+            # Do not decode an optimistic command overlay as a device report.
+            raw_current = device.get_reported_property(self.id)
+            raw = self.decode_value(raw_current, device)
+            if raw_current is not None and raw is None:
+                raise ValueError("Invalid current target packet")
+            return {self.id: self.encode_value(build_targets_packet(value, raw))}
+
         # Use cases for value_redirect:
         #  1. To merge multiple dps into a single HA setting (eg where the
         #     manufacturer has chosen to implement speeds as dipswitch type
@@ -1156,6 +1184,12 @@ class TuyaDpsConfig:
                 raise ValueError(f"{self.name} ({value}) must be between {mn} and {mx}")
         if mask and isinstance(result, bool):
             result = int(result)
+
+        if self._config.get("write_handler") == "inkbird_int14s_target":
+            raw_current = pending_map.get(self.id, device.get_property(self.id))
+            raw = self.decode_value(raw_current, device)
+            packet = update_target_packet(raw, mask, self.endianness, result)
+            return {self.id: self.encode_value(packet)}
 
         if mask and isinstance(result, Number):
             # mask is in hex, 2 digits/characters per byte
