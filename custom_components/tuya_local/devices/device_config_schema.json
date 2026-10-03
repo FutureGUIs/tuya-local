@@ -225,6 +225,11 @@
                                     ],
                                     "description": "Validate the trailing CRC-8/ATM byte (poly 0x07, init 0x00, no reflection or final xor) before extracting values. Read-only packets only."
                                 },
+                                "write_handler": {
+                                    "type": "string",
+                                    "enum": ["inkbird_int14s_target", "inkbird_int14s_targets", "inkbird_int14s_food_high"],
+                                    "description": "Update one INT-14S target threshold, preserve the rest of its validated 21-byte packet, enable the threshold mode and recalculate the checksum."
+                                },
                                 "mask": {
                                     "type": "string",
                                     "pattern": "^[0-9a-fA-F]+$",
@@ -241,7 +246,7 @@
                                 },
                                 "unit": {
                                     "type": "string",
-                                    "description": "The unit of measurement for a sensor DP (e.g., °C, %, W). Some units can use ASCII replacements like C for °C, F for °F, and ugm3 for μg/m³ to simplify input and avoid accidental incorrect Unicode character usage."
+                                    "description": "The unit of measurement for a sensor DP (e.g., Ã‚Â°C, %, W). Some units can use ASCII replacements like C for Ã‚Â°C, F for Ã‚Â°F, and ugm3 for ÃŽÂ¼g/mÃ‚Â³ to simplify input and avoid accidental incorrect Unicode character usage."
                                 },
                                 "mapping": {
                                     "type": "array",

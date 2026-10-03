@@ -324,7 +324,17 @@ For read-only base64 and hex DPs, `crc8_atm` validates the last byte against
 CRC-8/ATM over all preceding bytes (polynomial 0x07, initial value 0x00,
 no reflection or final XOR). The checksum byte remains part of the decoded
 packet, so existing masks keep their offsets. This does not generate checksums
-for writes. Use with `length` to reject incompatible packet layouts.
+for ordinary masked writes. Use with `length` to reject incompatible packet layouts.
+
+### `write_handler`
+
+*Optional.*
+
+`inkbird_int14s_target` updates a single masked threshold in a 21-byte,
+CRC-validated INT-14S target packet. It preserves the other threshold, preset,
+timestamp and reserved bytes, enables the corresponding high/low mode bit and
+recalculates CRC-8/ATM. Only little-endian masks at offsets 1, 3, 12 and 14
+are accepted. Writes fail when the current packet is missing or invalid.
 
 ## Mapping Rules
 
@@ -866,3 +876,18 @@ to use it for other length timers.
 
 - **away_mode** (optional, boolean): a dp to control whether the water heater is in away mode.
 
+
+
+`inkbird_int14s_targets` uses one text value containing a JSON object with
+`food_high`, `food_low`, `ambient_high`, and `ambient_low`, all in Fahrenheit.
+All four fields are required; `null` disables a threshold. It creates a complete
+20-byte command when no current report exists, using default metadata, or
+preserves metadata from a valid existing packet. The text entity restores its
+last requested value and labels its source independently of device readback.
+
+
+`inkbird_int14s_food_high` exposes the food-high field as a native Fahrenheit
+number. Its writes build a full 20-byte command with food-low and both ambient
+thresholds disabled. The last requested native value is restored by its number
+entity. This profile's time-to-temp duration sensors use food channel 1 and a
+five-minute regression window, requiring at least a minute of fresh readings.

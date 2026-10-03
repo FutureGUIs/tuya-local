@@ -761,3 +761,227 @@ entities:
         range:
           min: 1
           max: 100
+
+  - entity: number
+    name: Probe 1 food high target
+    class: temperature
+    category: config
+    dps:
+      - id: 122
+        type: base64
+        name: value
+        optional: true
+        force: true
+        length: 21
+        checksum: crc8_atm
+        write_handler: inkbird_int14s_food_high
+        unit: F
+        range:
+          min: 32
+          max: 572
+
+  - entity: sensor
+    name: Probe 1 time to temp
+    class: duration
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: 000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000FFFF0000
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 100
+      - id: 122
+        type: base64
+        name: target
+        optional: true
+        readonly: true
+        length: 21
+        checksum: crc8_atm
+        write_handler: inkbird_int14s_food_high
+
+  - entity: number
+    name: Probe 2 food high target
+    class: temperature
+    category: config
+    dps:
+      - id: 123
+        type: base64
+        name: value
+        optional: true
+        force: true
+        length: 21
+        checksum: crc8_atm
+        write_handler: inkbird_int14s_food_high
+        unit: F
+        range:
+          min: 32
+          max: 572
+
+  - entity: sensor
+    name: Probe 2 time to temp
+    class: duration
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: 0000000000000000000000000000000000000000000000000000000000000000000000000000FFFF000000000000000000000000000000
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 100
+      - id: 123
+        type: base64
+        name: target
+        optional: true
+        readonly: true
+        length: 21
+        checksum: crc8_atm
+        write_handler: inkbird_int14s_food_high
+
+  - entity: number
+    name: Probe 3 food high target
+    class: temperature
+    category: config
+    dps:
+      - id: 124
+        type: base64
+        name: value
+        optional: true
+        force: true
+        length: 21
+        checksum: crc8_atm
+        write_handler: inkbird_int14s_food_high
+        unit: F
+        range:
+          min: 32
+          max: 572
+
+  - entity: sensor
+    name: Probe 3 time to temp
+    class: duration
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: 00000000000000000000000000000000000000000000000000FFFF00000000000000000000000000000000000000000000000000000000
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 100
+      - id: 124
+        type: base64
+        name: target
+        optional: true
+        readonly: true
+        length: 21
+        checksum: crc8_atm
+        write_handler: inkbird_int14s_food_high
+
+  - entity: number
+    name: Probe 4 food high target
+    class: temperature
+    category: config
+    dps:
+      - id: 125
+        type: base64
+        name: value
+        optional: true
+        force: true
+        length: 21
+        checksum: crc8_atm
+        write_handler: inkbird_int14s_food_high
+        unit: F
+        range:
+          min: 32
+          max: 572
+
+  - entity: sensor
+    name: Probe 4 time to temp
+    class: duration
+    dps:
+      - id: 109
+        type: base64
+        name: sensor
+        optional: true
+        readonly: true
+        force: true
+        length: 55
+        checksum: crc8_atm
+        mask: 000000000000000000000000FFFF0000000000000000000000000000000000000000000000000000000000000000000000000000000000
+        endianness: little
+        mask_signed: true
+        class: measurement
+        unit: F
+        mapping:
+          - dps_val: 32766
+            value: null
+          - dps_val: 32767
+            value: null
+          - dps_val: -32768
+            value: null
+          - dps_val: -32767
+            value: null
+          - dps_val: -32766
+            value: null
+          - scale: 100
+      - id: 125
+        type: base64
+        name: target
+        optional: true
+        readonly: true
+        length: 21
+        checksum: crc8_atm
+        write_handler: inkbird_int14s_food_high
