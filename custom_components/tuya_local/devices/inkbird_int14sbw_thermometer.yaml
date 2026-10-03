@@ -749,3 +749,15 @@ entities:
         name: sensor
         readonly: true
         unit: "%"
+
+  - entity: number
+    name: Display brightness
+    category: config
+    dps:
+      - id: 104
+        type: integer
+        name: value
+        unit: "%"
+        range:
+          min: 1
+          max: 100
