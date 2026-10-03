@@ -1,6 +1,9 @@
 # yamllint disable rule:line-length
 name: Multisensor BBQ thermometer
-# Inkbird INT-14S-BW. Product ID is not yet available.
+products:
+  - id: bozmpl04yva3x0sa
+    manufacturer: Inkbird
+    model: INT-14S-BW
 # Layout reference: zampix1/ha-inkbird-int14 protocol.py.
 # DP109: four 13-byte probe blocks, station int16, CRC-8/ATM.
 # Each probe: internal int16, four food int16, ambient int16, status byte.
