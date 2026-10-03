@@ -682,7 +682,7 @@
 - Götze and Jensen KT975K smart kettle
 - Hauslane IN-R110 range hood
 - Homend Royaltea kettle
-- Inkbird iBBQ-4BW, iBBQ-4T, IBS-M1S, IBS-M2, IBT-26S, INT-12-BW cooking probe thermometers
+- Inkbird iBBQ-4BW, iBBQ-4T, IBS-M1S, IBS-M2, IBT-26S, INT-12-BW, INT-14S-BW (read-only) cooking probe thermometers
 - Inkbird ISC-007BW smoker fan controller
 - Inkbird sous vide cooker (also supports Silvercrest sous vide sticks)
 - KKT Kolbe Easy and Solo kitchen hoods
